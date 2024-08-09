@@ -1,0 +1,3 @@
+[submodule "data_import"]
+	path = data_import
+	url = git@git.opendfki.de:ai-care-working-group/ap7/datenimport_aicare.git
