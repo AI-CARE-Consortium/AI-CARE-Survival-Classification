@@ -1,3 +1,4 @@
+from sklearn.dummy import DummyClassifier
 from data_import.data_loading import import_aicare
 from data_import.data_preprocessing import calculate_survival_time, calculate_outcome_in_X_years
 
@@ -17,16 +18,22 @@ import optuna
 
 if __name__ == '__main__':
     random_state = 21
-    parser = argparse.ArgumentParser(description='Process some integers.')
+    parser = argparse.ArgumentParser(description='Train a CatBoost model for binary classification')
     parser.add_argument('--registry', type=str, help='registry number')  
     parser.add_argument('--months', type=int, help='Months to binary classify')
     parser.add_argument("--inverse", action="store_true", help="Inverse the binary classification")
+    parser.add_argument("--dummy", action="store_true", help="Use dummy classifier that predicts the most frequent class")
     args = parser.parse_args()
     registry = args.registry
     months = args.months
     logger = logging.getLogger()
     logger.setLevel(logging.INFO)
-    log_path = f"./results/log_study_registry_{registry}_months_{months}"
+    if args.dummy:
+        log_path = f"./results/dummy/log_study_registry_{registry}_months_{months}"
+        dummy = "dummy/"
+    else:
+        log_path = f"./results/log_study_registry_{registry}_months_{months}"
+        dummy = ""
     if args.inverse:
         log_path += "_inverse_fixed_params.txt"
     else:
@@ -141,6 +148,7 @@ if __name__ == '__main__':
 
     X_train_split, X_val, y_train_split, y_val = train_test_split(X_train, y_train, test_size=0.2, random_state=21)
 
+    # Hyperparameter optimization
     def objective(trial):
         """
         Optimize the parameters for training a CatBoostClassifier model using Optuna.
@@ -172,20 +180,6 @@ if __name__ == '__main__':
         model = CatBoostClassifier(**param)
         model.fit(train_pool, eval_set=eval_pool)
         return model.get_best_score()["validation"]["Logloss"]
-    # Train model
-    model = CatBoostClassifier(early_stopping_rounds=30,
-                               task_type="CPU",
-                               #devices='cuda:0',
-                               nan_mode="Min",
-                               cat_features=cat_feature_ind,
-                               custom_metric=['Logloss', 'F1', 'Accuracy'],
-                               train_dir=f"./catboost_info/{registry}_{months}/",
-                               border_count=190,
-                               depth=7,
-                               colsample_bylevel=0.6,
-                               min_data_in_leaf=48,
-                               one_hot_max_size=5
-                               )
     
     
     # study = optuna.create_study(study_name=str(datetime.datetime.now()),
@@ -197,9 +191,34 @@ if __name__ == '__main__':
     # logger.info(f"Best trial: {trial}")
     # logger.info(f"Best parameters: {trial.params}")
     # model = CatBoostClassifier(**trial.params)
+
+    # Train model
+    if args.dummy:
+        model = DummyClassifier(strategy="prior")
+    else:
+    
+        model = CatBoostClassifier(early_stopping_rounds=30,
+                                task_type="CPU",
+                                #devices='cuda:0',
+                                nan_mode="Min",
+                                cat_features=cat_feature_ind,
+                                custom_metric=['Logloss', 'F1', 'Accuracy'],
+                                train_dir=f"./catboost_info/{registry}_{months}/",
+                                border_count=190,
+                                depth=7,
+                                colsample_bylevel=0.6,
+                                min_data_in_leaf=48,
+                                one_hot_max_size=5
+                                )
+    
+    
+
     train_pool = Pool(X_train_split, y_train_split, cat_features=cat_feature_ind)
     eval_pool = Pool(X_val, y_val, cat_features=cat_feature_ind)
-    model.fit(train_pool, eval_set=eval_pool, plot_file=f"./results/plot_{registry}_{months}.html")
+    if args.dummy:
+        model.fit(X_train_split, y_train_split)
+    else:
+        model.fit(train_pool, eval_set=eval_pool, plot_file=f"./results/plot_{registry}_{months}.html")
     print(model.score(X_test, y_test))
     fpr, tpr, thresholds = metrics.roc_curve(y_test, model.predict_proba(X_test)[:,1])
     roc_auc = metrics.auc(fpr, tpr)
@@ -209,13 +228,13 @@ if __name__ == '__main__':
     plt.ylabel('True Positive Rate')
     plt.title('ROC curve')
     plt.legend(loc="lower right")
-    plt.savefig(f"./results/roc_{registry}_{months}.png", dpi=500)
+    plt.savefig(f"./results/{dummy}roc_{registry}_{months}.png", dpi=500)
     plt.close()
     
     # Save predictions
     prediction = model.predict(X_train)
     dataset_train.loc[:,"prediction"] = prediction
-    dataset_train[['Patient_ID_unique', 'prediction', f"deathwithin{months}months"]].to_csv(f"./results/predictions_{registry}_{months}.csv", index=False)
+    dataset_train[['Patient_ID_unique', 'prediction', f"deathwithin{months}months"]].to_csv(f"./results/{dummy}predictions_{registry}_{months}.csv", index=False)
 
     # Log results
     logger.info(f"Test Registry: {registry} - binary classification for {months} months")
@@ -225,10 +244,11 @@ if __name__ == '__main__':
 
     logger.info(f"Model score: {model.score(X_test, y_test)}")
     logger.info(metrics.classification_report(y_test, model.predict(X_test)))
-    logger.info(model.get_feature_importance(prettified=True).to_string())
-    model.save_model(f"./results/model_{registry}_{months}.cbm")
-    tree = model.plot_tree(tree_idx=0, pool=train_pool)
-    tree.save(f"./results/tree_{registry}_{months}.gv")
-    os.system(f"dot -Tpng ./results/tree_{registry}_{months}.gv -o ./results/tree_{registry}_{months}.png")
+    if not args.dummy:
+        logger.info(model.get_feature_importance(prettified=True).to_string())
+        model.save_model(f"./results/{dummy}model_{registry}_{months}.cbm")
+        tree = model.plot_tree(tree_idx=0, pool=train_pool)
+        tree.save(f"./results/{dummy}tree_{registry}_{months}.gv")
+        os.system(f"dot -Tpng ./results/{dummy}tree_{registry}_{months}.gv -o ./results/tree_{registry}_{months}.png")
     # for i, name in enumerate(X_train.columns):
     #     model.calc_feature_statistics(train_pool, feature=i, plot=True, cat_feature_values=cat_feature_ind ,plot_file=f"./results/features/{name}_{registry}_{months}.png")
