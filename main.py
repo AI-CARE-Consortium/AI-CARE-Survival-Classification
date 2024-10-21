@@ -15,10 +15,12 @@ import matplotlib.pyplot as plt
 import os
 from os import path
 import optuna
+import pathlib
 
 if __name__ == '__main__':
     random_state = 21
     parser = argparse.ArgumentParser(description='Train a CatBoost model for binary classification')
+    parser.add_argument('--data_path', type=str, help='Path to the data')
     parser.add_argument('--registry', type=str, help='registry number')  
     parser.add_argument('--months', type=int, help='Months to binary classify')
     parser.add_argument("--inverse", action="store_true", help="Inverse the binary classification")
@@ -31,11 +33,13 @@ if __name__ == '__main__':
     if args.dummy:
         log_path = f"./results/dummy/log_study_registry_{registry}_months_{months}"
         dummy = "dummy/"
+        if not path.exists("./results/dummy"):
+            pathlib.Path("./results/dummy").mkdir(parents=True, exist_ok=True)
     else:
         log_path = f"./results/log_study_registry_{registry}_months_{months}"
         dummy = ""
     if args.inverse:
-        log_path += "_inverse_fixed_params.txt"
+        log_path += "_inverse.txt"
     else:
         log_path += ".txt"
     study_db="sqlite:///optuna.db"
@@ -48,10 +52,13 @@ if __name__ == '__main__':
     else:
         logger.info("Binary classification: 1 if patient dies within the time frame, 0 otherwise")
     # Load data
-    if path.exists(f"./results/dataset_{months}.pkl"):
-        dataset = pd.read_pickle(f"./results/dataset_{months}.pkl")
+    data_path = args.data_path
+    print(data_path)
+    
+    if path.exists(f"{data_path}dataset_{months}.pkl"):
+        dataset = pd.read_pickle(f"{data_path}dataset_{months}.pkl")
     else:
-        aicare = import_aicare(path="./aicare/aicare_gesamt/", tumor_entity="lung", registry="all")
+        aicare = import_aicare(path=data_path, tumor_entity="lung", registry="all")
         dataset = aicare["patient"].drop(columns=["Patient_ID"])
         # Merge all tables
         dataset = dataset.merge(aicare["tumor"].groupby("Patient_ID_unique").first().drop(columns=["Register_ID_FK", "Tumor_ID", "Patient_ID_FK"]), on="Patient_ID_unique")
@@ -83,7 +90,7 @@ if __name__ == '__main__':
             dataset.loc[:,column] = dataset.loc[:,column].astype(pd.CategoricalDtype(categories=dataset[column].cat.categories.append(pd.Index(["-1"])), ordered=True))
             dataset.loc[:,column] = dataset.loc[:,column].fillna("-1")
     #print(cat_feature_ind)
-    dataset.to_pickle(f"./results/dataset_{months}.pkl")
+    dataset.to_pickle(f"{data_path}dataset_{months}.pkl")
 
     # Split data into train and test
     # If registry is all, split 80:20, otherwise use the registry as test set

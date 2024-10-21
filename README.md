@@ -16,7 +16,7 @@ git submodule update
 ## Usage
 ### Via Docker / Podman
 After loading the submodule, run `podman build -t localhost/aicare-binary-classification:latest .` to build the image.
-Then, run `podrun --rm --mount type=bind,source=./aicare,target=/app/aicare --mount type=bind,source=./results,target=/app/results aicare_binary_classification:latest` (adjust source paths to your needs!)
+Then, run `podrun --rm --mount type=bind,source=./data_path,target=/app/data --mount type=bind,source=./results,target=/app/results aicare_binary_classification:latest` (adjust source paths to your needs!)
 
 
 ### Manually
@@ -31,6 +31,7 @@ with the following arguments:
     --months, type=int: 'Survival months to binary classify'
     --inverse, action="store_true": Inverse the binary classification
     --dummy, action="store_true", Use dummy classifier that always predicts the most frequent class
+    --data_path, type=str: path to your data
 ```
 
 

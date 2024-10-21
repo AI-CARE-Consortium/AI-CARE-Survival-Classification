@@ -3,7 +3,6 @@ FROM docker.io/continuumio/miniconda3
 
 # Set the working directory
 WORKDIR /app
-
 # Copy the environment.yml file to the working directory
 COPY environment.yml .
 
@@ -28,6 +27,8 @@ RUN chmod +rw catboost_info
 
 # Make the run.sh script executable
 RUN chmod +x run.sh
+
+ENV data_path="/app/data/"
 
 # Run the run.sh script
 #CMD ["conda activate aicare_binary_classification"]
