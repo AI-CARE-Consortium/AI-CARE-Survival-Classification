@@ -1,0 +1,38 @@
+{
+    "creators": [
+        {
+            "orcid": " 0000-0001-8439-872X ",
+            "affiliation": "German Research Centre for Artificial Intelligence",
+            "name": "Germer, Sebastian"
+        },
+        {
+            "orcid": "0000-0001-8294-2963",
+            "affiliation": "University of Luebeck",
+            "name": "Rudolph, Christiane"
+        },
+        {
+            "orcid": "0000-0003-0490-1554",
+            "affiliation": "University of Luebeck",
+            "name": "Katalinic, Alexander"
+        },
+        {
+            "orcid": "0009-0000-4818-7773",
+            "affiliation": "Saarland Cancer Registry",
+            "name": "Rath, Natalie"
+        },
+        {
+            "affiliation": "Saarland Cancer Registry",
+            "name": "Rausch, Katharina"
+        },
+        {
+            "orcid": "0000-0002-3499-4328",
+            "affiliation": "German Research Centre for Artificial Intelligence",
+            "name": "Handels, Heinz"
+        }
+    ],
+
+    "license": "MIT",
+    "upload_type": "software",
+
+    "title": "AI-Care Binary Classification of Lung Cancer Survival"
+}
