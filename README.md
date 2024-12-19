@@ -1,5 +1,5 @@
 # AI-Care Binary Classification of Lung Cancer Survival
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.13986103.svg)](https://doi.org/10.5281/zenodo.13986103)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.14524261.svg)](https://doi.org/10.5281/zenodo.14524261)
 
 This repository contains the implementation of a binary classification model using `main.py`.
 
