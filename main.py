@@ -25,9 +25,14 @@ if __name__ == '__main__':
     parser.add_argument('--months', type=int, help='Months to binary classify')
     parser.add_argument("--inverse", action="store_true", help="Inverse the binary classification")
     parser.add_argument("--dummy", action="store_true", help="Use dummy classifier that predicts the most frequent class")
+    parser.add_argument("--entity", type=str, help="Entity to train on")
     args = parser.parse_args()
     registry = args.registry
     months = args.months
+    
+    entity = args.entity
+    if entity not in ["lung", "thyroid", "breast", "non_hodgkin_lymphoma"]:
+        raise ValueError("Entity must be one of lung, thyroid, breast, non_hodgkin_lymphoma")
     logger = logging.getLogger()
     logger.setLevel(logging.INFO)
     if args.dummy:
@@ -46,7 +51,7 @@ if __name__ == '__main__':
     logger.addHandler(logging.FileHandler(log_path, mode="w"))
     optuna.logging.enable_propagation()  # Propagate logs to the root logger.
     optuna.logging.disable_default_handler()  # Stop showing logs in sys.stderr.
-    logger.info(f"Starting study for registry {registry} and binary classification for {months} months at the time {datetime.datetime.now()}")
+    logger.info(f"Starting study for registry {registry}, entity {entity} and binary classification for {months} months at the time {datetime.datetime.now()}")
     if args.inverse:
         logger.info("Inverse binary classification: 0 if patient dies within the time frame, 1 otherwise")
     else:
@@ -55,10 +60,10 @@ if __name__ == '__main__':
     data_path = args.data_path
     print(data_path)
     
-    if path.exists(f"{data_path}dataset_{months}.pkl"):
-        dataset = pd.read_pickle(f"{data_path}dataset_{months}.pkl")
+    if path.exists(f"{data_path}dataset_{months}_{entity}.pkl"):
+        dataset = pd.read_pickle(f"{data_path}dataset_{months}_{entity}.pkl")
     else:
-        aicare = import_aicare(path=data_path, tumor_entity="lung", registry="all")
+        aicare = import_aicare(path=data_path, tumor_entity=entity, registry=["1", "2", "3", "5", "10", "14", "15"])
         dataset = aicare["patient"].drop(columns=["Patient_ID"])
         # Merge all tables
         dataset = dataset.merge(aicare["tumor"].groupby("Patient_ID_unique").first().drop(columns=["Register_ID_FK", "Tumor_ID", "Patient_ID_FK"]), on="Patient_ID_unique")
@@ -67,6 +72,8 @@ if __name__ == '__main__':
         dataset.rename(columns={"Stellung_OP": "Stellung_OP_st"}, inplace=True)
         dataset = dataset.merge(aicare["systemtherapie"].groupby("Patient_ID_unique").first().drop(columns=["Register_ID_FK", "Patient_ID_FK", "SYST_ID", "Tumor_ID_FK"]), on="Patient_ID_unique", how="left")
         dataset.rename(columns={"Stellung_OP": "Stellung_OP_syst"}, inplace=True)
+        if entity == "breast":
+            dataset = dataset.merge(aicare["modul_mamma"].drop(columns=["Register_ID_FK", "Patient_ID_FK", "Tumor_ID_FK"]), on="Patient_ID_unique", how="left")
         dataset = dataset.reset_index(drop=True)
         
         # Binarize data depending on survival time
@@ -74,7 +81,7 @@ if __name__ == '__main__':
         dataset["survival_time"] = calculate_survival_time(dataset, "Datum_Vitalstatus", "Diagnosedatum")
 
         dataset = dataset[dataset["survival_time"]>0]
-        dataset["Alter_bei_Diagnose"] = ((dataset['Diagnosedatum'] - dataset['Geburtsdatum']).dt.days // 365.25).astype(int)
+        #dataset["Alter_bei_Diagnose"] = ((dataset['Diagnosedatum'] - dataset['Geburtsdatum']).dt.days // 365.25).astype(int)
 
 
         dead = (dataset["survival_time"] < 30* months) & (dataset["Verstorben"] == 1)
@@ -90,12 +97,12 @@ if __name__ == '__main__':
             dataset.loc[:,column] = dataset.loc[:,column].astype(pd.CategoricalDtype(categories=dataset[column].cat.categories.append(pd.Index(["-1"])), ordered=True))
             dataset.loc[:,column] = dataset.loc[:,column].fillna("-1")
     #print(cat_feature_ind)
-    dataset.to_pickle(f"{data_path}dataset_{months}.pkl")
+    dataset.to_pickle(f"{data_path}dataset_{months}_{entity}.pkl")
 
     # Split data into train and test
     # If registry is all, split 80:20, otherwise use the registry as test set
     if registry == "all":
-        dataset_train, dataset_test = train_test_split(dataset, test_size=0.2, random_state=21)
+        dataset_train, dataset_test = train_test_split(dataset, test_size=0.2, random_state=21, stratify=dataset[f"liveslongerthan{months}months"])
     else:
         dataset_test = dataset[dataset["Register_ID_FK"] == registry]
         dataset_train = dataset[dataset["Register_ID_FK"] != registry]
@@ -251,6 +258,7 @@ if __name__ == '__main__':
 
     logger.info(f"Model score: {model.score(X_test, y_test)}")
     logger.info(metrics.classification_report(y_test, model.predict(X_test)))
+    logger.info(f"Area under the ROC curve: {roc_auc}")
     if not args.dummy:
         logger.info(model.get_feature_importance(prettified=True).to_string())
         model.save_model(f"./results/{dummy}model_{registry}_{months}.cbm")

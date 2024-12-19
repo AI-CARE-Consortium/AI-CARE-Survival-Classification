@@ -17,7 +17,7 @@ git submodule update
 ## Usage
 ### Via Docker / Podman
 After loading the submodule, run `podman build -t localhost/aicare-binary-classification:latest .` to build the image.
-Then, run `podrun --rm --mount type=bind,source=./data_path,target=/app/data --mount type=bind,source=./results,target=/app/results aicare_binary_classification:latest` (adjust source paths to your needs!)
+Then, run `podman run --rm --mount type=bind,source=./data_path,target=/app/data --mount type=bind,source=./results,target=/app/results aicare_binary_classification:latest` (adjust source paths to your needs!)
 
 
 ### Manually
@@ -33,6 +33,7 @@ with the following arguments:
     --inverse, action="store_true": Inverse the binary classification
     --dummy, action="store_true", Use dummy classifier that always predicts the most frequent class
     --data_path, type=str: path to your data
+    --entity, type=str, Entity to train on (lung, breast, thyroid, non_hodgkin_lymphoma)
 ```
 
 
@@ -50,10 +51,12 @@ The `main.py` script is the main entry point for training and evaluating the bin
 ## Directory Structure
 
 ```
-/share/data_aimedi02_1/germer/aicare_binary_classification/
 │
 ├── main.py
 ├── README.md
+├── Dockerfile
+├── run.sh
+├── environment.yml
 └── data_import
     ├── data_preprocessing.py
     └── data_loading.py

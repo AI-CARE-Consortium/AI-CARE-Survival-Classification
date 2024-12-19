@@ -30,6 +30,7 @@ RUN chmod +x run.sh
 
 ENV data_path="/app/data/"
 
+ENV entity="lung"
 # Run the run.sh script
 #CMD ["conda activate aicare_binary_classification"]
 # Make RUN commands use the new environment
