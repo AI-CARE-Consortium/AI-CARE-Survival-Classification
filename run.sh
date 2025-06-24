@@ -9,7 +9,9 @@ do
     for i in "all" "1" "2" "3" "4" "5" "6" "7" "9" "10" "13" "14" "15" "16"
     do
         echo "Running for registry $i"
-        python main.py --registry=$i --months=$months --inverse --dummy --data_path=$data_path --entity=$entity
+        python main.py --registry=$i --months=$months --inverse --dummy --data_path=$data_path --entity=$entity --traintestswap
+        python main.py --registry=$i --months=$months --inverse --data_path=$data_path --entity=$entity --traintestswap
+        python main.py --registry=$i --months=$months --inverse --dummy --data_path=$data_path --entity=$entity 
         python main.py --registry=$i --months=$months --inverse --data_path=$data_path --entity=$entity
     done
 done;

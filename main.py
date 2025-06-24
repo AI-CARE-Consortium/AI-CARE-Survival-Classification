@@ -26,6 +26,7 @@ if __name__ == '__main__':
     parser.add_argument("--inverse", action="store_true", help="Inverse the binary classification")
     parser.add_argument("--dummy", action="store_true", help="Use dummy classifier that predicts the most frequent class")
     parser.add_argument("--entity", type=str, help="Entity to train on")
+    parser.add_argument("--traintestswap", action="store_true", help="Swap train and test sets for evaluation")
     args = parser.parse_args()
     registry = args.registry
     months = args.months
