@@ -34,7 +34,7 @@
         {
             "identifier": "http://doi.org/10.3233/SHTI250379",
             "relation": "isSupplementTo",
-            "resource_type": "publication-conferencepaper"
+            "resource_type": "publication-article"
         }
     ],
 
