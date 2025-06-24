@@ -80,8 +80,17 @@ if __name__ == '__main__':
         dataset = dataset.merge(aicare["op"].groupby("Patient_ID_unique").first().drop(columns=["Register_ID_FK", "Patient_ID_FK", "Tumor_ID_FK", "OP_ID"]), on="Patient_ID_unique", how="left")
         dataset = dataset.merge(aicare["strahlentherapie"].groupby("Patient_ID_unique").first().drop(columns=["Register_ID_FK", "Patient_ID_FK", "Bestrahlung_ID", "Tumor_ID_FK"]), on="Patient_ID_unique", how="left")
         dataset.rename(columns={"Stellung_OP": "Stellung_OP_st"}, inplace=True)
+        if path.exists(f"{data_path}systemtherapie_with_substance_service_variable.csv"):
+            substance_service = pd.read_csv(f"{data_path}systemtherapie_with_substance_service_variable.csv")
+            substance_service["Patient_ID_unique"] = substance_service["Patient_ID_FK"].astype(str) + "_" + substance_service["Register_ID_FK"].astype(str)
+            substance_service["SYST_ID"] = substance_service["SYST_ID"].astype(str)
+            aicare["systemtherapie"]["Substanzen_extracted"] = aicare["systemtherapie"].merge(substance_service.drop(columns=["Register_ID_FK", "Patient_ID_FK", "Tumor_ID_FK"]), on=["Patient_ID_unique","SYST_ID"], how="left")["Substanzen_extracted"]
+            aicare["systemtherapie"]["Substanzen_extracted"] = aicare["systemtherapie"]["Substanzen_extracted"].astype(pd.StringDtype())
+            aicare["systemtherapie"].drop(columns="Substanzen", inplace=True)
         dataset = dataset.merge(aicare["systemtherapie"].groupby("Patient_ID_unique").first().drop(columns=["Register_ID_FK", "Patient_ID_FK", "SYST_ID", "Tumor_ID_FK"]), on="Patient_ID_unique", how="left")
         dataset.rename(columns={"Stellung_OP": "Stellung_OP_syst"}, inplace=True)
+
+        
         if entity == "breast":
             dataset = dataset.merge(aicare["modul_mamma"].drop(columns=["Register_ID_FK", "Patient_ID_FK", "Tumor_ID_FK"]), on="Patient_ID_unique", how="left")
         dataset = dataset.reset_index(drop=True)
