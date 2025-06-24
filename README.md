@@ -1,7 +1,20 @@
 # AI-Care Binary Classification of Lung Cancer Survival
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.14524261.svg)](https://doi.org/10.5281/zenodo.14524261)
+[![DOI](https://img.shields.io/badge/Paper@MIE-10.3233/SHTI250379-blue)](doi.org/10.3233/SHTI250379)
 
-This repository contains the implementation of a binary classification model using `main.py`.
+This repository contains the implementation of a binary classification model for predicting survival outcomes in lung cancer patients from German cancer registry data. The project is part of the [AI-Care initiative](https://ai-care-cancer.de/). This work [has been published](https://doi.org/10.3233/SHTI250379) at the MIE 2025 conference.
+To cite our paper, please use:
+```
+@incollection{germer2025lung,
+  title={Lung Cancer Survival Estimation Using Data from Seven German Cancer Registries},
+  author={Germer, Sebastian and Rudolph, Christiane and Katalinic, Alexander and Rath, Natalie and Rausch, Katharina and Handels, Heinz},
+  booktitle={Intelligent Health Systems--From Technology to Data and Knowledge},
+  pages={457--461},
+  year={2025},
+  doi={https://doi.org/10.3233/SHTI250379},
+  publisher={IOS Press}
+}
+```
 
 ## Requirements
 - After cloning, you need to load the data_import submodule. This can be done using:
@@ -17,7 +30,7 @@ git submodule update
 ## Usage
 ### Via Docker / Podman
 After loading the submodule, run `podman build -t localhost/aicare-binary-classification:latest .` to build the image.
-Then, run `podman run --rm --mount type=bind,source=./data_path,target=/app/data --mount type=bind,source=./results,target=/app/results aicare_binary_classification:latest` (adjust source paths to your needs!)
+Then, run `podman run --rm --mount type=bind,source=./data_path,target=/app/data --mount type=bind,source=./result_path,target=/app/results aicare-binary-classification:latest` (adjust local paths to your needs!)
 
 
 ### Manually
@@ -31,22 +44,12 @@ with the following arguments:
     --registry, type=str: registry number according to   
     --months, type=int: 'Survival months to binary classify'
     --inverse, action="store_true": Inverse the binary classification
-    --dummy, action="store_true", Use dummy classifier that always predicts the most frequent class
+    --dummy, action="store_true": Use dummy classifier that always predicts the most frequent class
     --data_path, type=str: path to your data
-    --entity, type=str, Entity to train on (lung, breast, thyroid, non_hodgkin_lymphoma)
+    --entity, type=str: Entity to train on (lung, breast, thyroid, non_hodgkin_lymphoma)
+    --traintestswap, action="store_true": Whether to use register as training data instead of test data
 ```
 
-
-
-
-## main.py
-
-The `main.py` script is the main entry point for training and evaluating the binary classification model. It includes the following key functionalities:
-
-- Data loading and preprocessing
-- Model definition and compilation
-- Training the model
-- Evaluating the model performance
 
 ## Directory Structure
 
