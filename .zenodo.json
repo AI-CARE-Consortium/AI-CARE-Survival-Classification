@@ -30,6 +30,13 @@
             "name": "Handels, Heinz"
         }
     ],
+    "related_identifiers": [
+        {
+            "identifier": "http://doi.org/10.3233/SHTI250379",
+            "relation": "isSupplementTo",
+            "resource_type": "conferencepaper"
+        }
+    ],
 
     "license": "MIT",
     "upload_type": "software",
