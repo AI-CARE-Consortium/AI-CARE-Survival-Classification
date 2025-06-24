@@ -36,18 +36,27 @@ if __name__ == '__main__':
         raise ValueError("Entity must be one of lung, thyroid, breast, non_hodgkin_lymphoma")
     logger = logging.getLogger()
     logger.setLevel(logging.INFO)
+    result_path = "./results"
     if args.dummy:
-        log_path = f"./results/dummy/log_study_registry_{registry}_months_{months}"
-        dummy = "dummy/"
-        if not path.exists("./results/dummy"):
-            pathlib.Path("./results/dummy").mkdir(parents=True, exist_ok=True)
-    else:
-        log_path = f"./results/log_study_registry_{registry}_months_{months}"
-        dummy = ""
+        result_path += "/dummy"
+    if args.traintestswap:
+        result_path += "/traintestswap"
+    
+    if not path.exists(result_path):
+        pathlib.Path(result_path).mkdir(parents=True, exist_ok=True)
+
+    log_path = f"{result_path}/log_study_registry_{registry}_months_{months}"
+
     if args.inverse:
         log_path += "_inverse.txt"
     else:
         log_path += ".txt"
+    csv_path = f"{result_path}/results.csv"
+    if not path.exists(csv_path):
+        pathlib.Path.touch(csv_path)
+        with open(csv_path, mode="w+t") as file:
+            file.write("Date,Registry,Train or Test,Cut,Accuracy,F1-Alive,F1-Dead,AUROC\n")
+
     study_db="sqlite:///optuna.db"
     logger.addHandler(logging.FileHandler(log_path, mode="w"))
     optuna.logging.enable_propagation()  # Propagate logs to the root logger.
@@ -113,6 +122,18 @@ if __name__ == '__main__':
     else:
         y_test = dataset_test[f"liveslongerthan{months}months"]
         y_train = dataset_train[f"liveslongerthan{months}months"]
+
+    if args.traintestswap:
+        temp = dataset_train.copy(deep=True)
+        dataset_train = dataset_test
+        dataset_test = temp
+
+        temp = y_train.copy(deep=True)
+        y_train = y_test
+        y_test = temp
+
+        logger.info("Swapped train and test data!")
+    
 
     # Drop columns that are not needed or are leaking information
     drop_cols = ["Register_ID_FK", "Patient_ID_unique", "Diagnosedatum", "Geburtsdatum", "Beginn_Bestrahlung", "Beginn_SYST", "Datum_OP", 
@@ -233,7 +254,7 @@ if __name__ == '__main__':
     if args.dummy:
         model.fit(X_train_split, y_train_split)
     else:
-        model.fit(train_pool, eval_set=eval_pool, plot_file=f"./results/plot_{registry}_{months}.html")
+        model.fit(train_pool, eval_set=eval_pool, plot_file=f"{result_path}/plot_{registry}_{months}.html")
     print(model.score(X_test, y_test))
     fpr, tpr, thresholds = metrics.roc_curve(y_test, model.predict_proba(X_test)[:,1])
     roc_auc = metrics.auc(fpr, tpr)
@@ -243,13 +264,13 @@ if __name__ == '__main__':
     plt.ylabel('True Positive Rate')
     plt.title('ROC curve')
     plt.legend(loc="lower right")
-    plt.savefig(f"./results/{dummy}roc_{registry}_{months}.png", dpi=500)
+    plt.savefig(f"{result_path}/roc_{registry}_{months}.png", dpi=500)
     plt.close()
     
     # Save predictions
     prediction = model.predict(X_train)
     dataset_train.loc[:,"prediction"] = prediction
-    dataset_train[['Patient_ID_unique', 'prediction', f"deathwithin{months}months"]].to_csv(f"./results/{dummy}predictions_{registry}_{months}.csv", index=False)
+    dataset_train[['Patient_ID_unique', 'prediction', f"deathwithin{months}months"]].to_csv(f"{result_path}/predictions_{registry}_{months}.csv", index=False)
 
     # Log results
     logger.info(f"Test Registry: {registry} - binary classification for {months} months")
@@ -260,11 +281,22 @@ if __name__ == '__main__':
     logger.info(f"Model score: {model.score(X_test, y_test)}")
     logger.info(metrics.classification_report(y_test, model.predict(X_test)))
     logger.info(f"Area under the ROC curve: {roc_auc}")
+
+    with open(csv_path, mode="a+t") as file:
+        #("Registry, Train or Test, Cut, Accuracy, F1-Alive, F1-Dead, AUROC")
+        file.write(f"{datetime.date.today()},"+
+                   f"{registry},"+
+                   f"{"Train" if args.traintestswap else "Test"},"+
+                   f"{months},"+
+                   f"{model.score(X_test, y_test)},"+
+                   f"{metrics.f1_score(y_test, model.predict(X_test),pos_label=1, average="binary", zero_division=0)},"+
+                   f"{metrics.f1_score(y_test, model.predict(X_test),pos_label=0, average="binary", zero_division=0)},"+
+                   f"{roc_auc}\n")
     if not args.dummy:
         logger.info(model.get_feature_importance(prettified=True).to_string())
-        model.save_model(f"./results/{dummy}model_{registry}_{months}.cbm")
+        model.save_model(f"{result_path}/model_{registry}_{months}.cbm")
         tree = model.plot_tree(tree_idx=0, pool=train_pool)
-        tree.save(f"./results/{dummy}tree_{registry}_{months}.gv")
-        os.system(f"dot -Tpng ./results/{dummy}tree_{registry}_{months}.gv -o ./results/tree_{registry}_{months}.png")
+        tree.save(f"{result_path}/tree_{registry}_{months}.gv")
+        os.system(f"dot -Tpng {result_path}/tree_{registry}_{months}.gv -o {result_path}/tree_{registry}_{months}.png")
     # for i, name in enumerate(X_train.columns):
     #     model.calc_feature_statistics(train_pool, feature=i, plot=True, cat_feature_values=cat_feature_ind ,plot_file=f"./results/features/{name}_{registry}_{months}.png")
