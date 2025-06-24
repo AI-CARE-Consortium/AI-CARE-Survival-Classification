@@ -1,6 +1,6 @@
 from sklearn.dummy import DummyClassifier
 from data_import.data_loading import import_aicare
-from data_import.data_preprocessing import calculate_survival_time, calculate_outcome_in_X_years
+from data_import.data_preprocessing import calculate_survival_time, calculate_survival_time_multiregistry, calculate_outcome_in_X_years
 
 from sklearn.feature_selection import RFECV
 from catboost import CatBoostClassifier, Pool
@@ -73,7 +73,7 @@ if __name__ == '__main__':
     if path.exists(f"{data_path}dataset_{months}_{entity}.pkl"):
         dataset = pd.read_pickle(f"{data_path}dataset_{months}_{entity}.pkl")
     else:
-        aicare = import_aicare(path=data_path, tumor_entity=entity, registry=["1", "2", "3", "5", "10", "14", "15"])
+        aicare = import_aicare(path=data_path, tumor_entity=entity, registry=["1", "2", "3", "4", "5", "6", "7", "9", "10", "13", "14", "15", "16"])
         dataset = aicare["patient"].drop(columns=["Patient_ID"])
         # Merge all tables
         dataset = dataset.merge(aicare["tumor"].groupby("Patient_ID_unique").first().drop(columns=["Register_ID_FK", "Tumor_ID", "Patient_ID_FK"]), on="Patient_ID_unique")
@@ -88,7 +88,7 @@ if __name__ == '__main__':
         
         # Binarize data depending on survival time
 
-        dataset["survival_time"] = calculate_survival_time(dataset, "Datum_Vitalstatus", "Diagnosedatum")
+        dataset["survival_time"] = calculate_survival_time_multiregistry(dataset)# , "Datum_Vitalstatus", "Diagnosedatum")
 
         dataset = dataset[dataset["survival_time"]>0]
         #dataset["Alter_bei_Diagnose"] = ((dataset['Diagnosedatum'] - dataset['Geburtsdatum']).dt.days // 365.25).astype(int)
