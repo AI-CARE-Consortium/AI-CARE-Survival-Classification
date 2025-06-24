@@ -1,6 +1,6 @@
 # AI-Care Binary Classification of Lung Cancer Survival
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.14524261.svg)](https://doi.org/10.5281/zenodo.14524261)
-[![DOI](https://img.shields.io/badge/Paper@MIE-10.3233/SHTI250379-blue)](doi.org/10.3233/SHTI250379)
+[![DOI](https://img.shields.io/badge/Paper@MIE2025-10.3233/SHTI250379-blue)](http://doi.org/10.3233/SHTI250379)
 
 This repository contains the implementation of a binary classification model for predicting survival outcomes in lung cancer patients from German cancer registry data. The project is part of the [AI-Care initiative](https://ai-care-cancer.de/). This work [has been published](https://doi.org/10.3233/SHTI250379) at the MIE 2025 conference.
 To cite our paper, please use:
