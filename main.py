@@ -142,7 +142,8 @@ if __name__ == '__main__':
                 "Anzahl_Tage_Diagnose_ST", "Anzahl_Tage_Diagnose_OP", "Anzahl_Tage_Diagnose_SYST", "Inzidenzort", "Primaertumor_DCN",
                 "Anzahl_Tage_SYST", "Anzahl_Tage_ST", "Primaertumor_ICD_Version", "pTNM_Version", "cTNM_Version", "Primaertumor_Morphologie_ICD_O_Version",
                 "Primaertumor_Topographie_ICD_O_Version", "Zielgebiet_CodeVersion", "TNM_Version", "Weitere_Todesursachen", "Weitere_Todesursachen_Version",
-                "Menge_OPS_version", "Diagnosesicherung", "Protokolle"]
+                "Menge_OPS_version", "Diagnosesicherung", "Protokolle", "Anzahl_Monate_Diagnose_Zensierung", "cTNM_T", "cTNM_N", "cTNM_M", "pTNM_T", "pTNM_N", "pTNM_M",
+                "Intention", "Intention_st", "Intention_sy"]
     
     
     obj_cols = dataset.select_dtypes(include=['object']).columns
