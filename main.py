@@ -280,6 +280,7 @@ if __name__ == '__main__':
 
     logger.info(f"Model score: {model.score(X_test, y_test)}")
     logger.info(metrics.classification_report(y_test, model.predict(X_test)))
+    logger.info("\n")
     logger.info(f"Area under the ROC curve: {roc_auc}")
 
     with open(csv_path, mode="a+t") as file:
@@ -293,6 +294,7 @@ if __name__ == '__main__':
                    f"{metrics.f1_score(y_test, model.predict(X_test),pos_label=0, average="binary", zero_division=0)},"+
                    f"{roc_auc}\n")
     if not args.dummy:
+        logger.info("Feature Importance:")
         logger.info(model.get_feature_importance(prettified=True).to_string())
         model.save_model(f"{result_path}/model_{registry}_{months}.cbm")
         tree = model.plot_tree(tree_idx=0, pool=train_pool)
