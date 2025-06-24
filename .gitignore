@@ -1,5 +1,8 @@
 /aicare
 /results
-*/__pycache__
+/__pycache__
+/.vscode
 /catboost_info
-/results_docker
+/results_*
+*.code*
+*.db
